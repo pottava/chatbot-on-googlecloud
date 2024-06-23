@@ -1,0 +1,12 @@
+body {
+    margin: 50px 75px;
+}
+body > h3 {
+    margin-bottom: 40px;
+}
+body li {
+    margin: 10px 0;
+}
+body > ul {
+    margin-left: -25px;
+}
