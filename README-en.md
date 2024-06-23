@@ -1,51 +1,51 @@
 A chatbot sample on Google Cloud
 ===
 
-## 基本設定
+## Basic configurations
 
-### 1.1. 環境の設定
+### 1.1. Define an environment
 
-利用するプロジェクトを設定してください。
+Set your project as environment variables.
 
 ```bash
-gcloud config set project "## あなたのプロジェクト ID ##"
+gcloud config set project "## Your project ID here ##"
 export PROJECT_ID=$( gcloud config get-value project )
 export PROJECT_NUMBER=$( gcloud projects list --filter="${GOOGLE_CLOUD_PROJECT}" --format="value(PROJECT_NUMBER)" )
 ```
 
-リージョンには東京を指定しましょう。
+Specify Tokyo as a region we use.
 
 ```bash
 export GOOGLE_CLOUD_REGION=asia-northeast1
 ```
 
-開発環境や本番環境ごとに異なる名前でリソースを作ることが推奨されます。以下では開発環境を想定して `dev` という接頭辞をつけます。
+It is recommended to create resources with different environment names in this tutorial, like development and production. We will assume the development environment and prefix it with `dev`.
 
 ```bash
 export ENVIRONMENT_NAME=dev
 ```
 
-もし一つのプロジェクトに複数人で利用する場合は認証したメールアドレスをユーザー名として利用してみます。
+If multiple users are using one project, try using the verified email address as the username.
 
 ```bash
 export ACCOUNT_EMAIL=$( gcloud auth list --filter 'status:ACTIVE' --format 'value(account)' )
 export ENVIRONMENT_NAME="dev-$( echo ${ACCOUNT_EMAIL} | cut -d "@" -f 1 )"
 ```
 
-### 1.2. API の有効化
+### 1.2. Enable Google Cloud APIs
 
-Google Cloud では、プロジェクトごとに **サービスの API** を有効化することでリソースが利用できるようになります。今回り要するサービスを有効化します。
+In Google Cloud, you can use resources by enabling **Service APIs** for each project. Now please enable the services you need.
 
 ```bash
 gcloud services enable compute.googleapis.com run.googleapis.com bigquery.googleapis.com \
     discoveryengine.googleapis.com storage.googleapis.com
 ```
 
-## 基本サービスの起動
+## Basic services
 
 ### 2.1. Google Cloud Storage
 
-RAG の根拠として利用するファイルをアップロードするためのバケットを作成します。
+Create a bucket to upload the files that will be used as evidence for the RAG system.
 
 ```bash
 export BUCKET_NAME="${ENVIRONMENT_NAME}-rag-storage"
@@ -53,9 +53,9 @@ gcloud storage buckets create "gs://${BUCKET_NAME}" --location "${GOOGLE_CLOUD_R
     --uniform-bucket-level-access --public-access-prevention --enable-autoclass
 ```
 
-### 2.2. IAM サービスアカウントの作成
+### 2.2. IAM service account
 
-Cloud Run アプリケーションに必要となる権限を設定します。
+Set the permissions required for your Cloud Run application.
 
 ```sh
 gcloud iam service-accounts create "${ENVIRONMENT_NAME}-chatbot" \
@@ -67,7 +67,7 @@ gcloud storage buckets add-iam-policy-binding "gs://${BUCKET_NAME}" \
 
 ### 2.3. Cloud Run
 
-いったんサンプルのアプリケーションを使い Cloud Run サービスを作成しておきます。
+First, create a Cloud Run service using the sample application.
 
 ```bash
 gcloud run deploy "${ENVIRONMENT_NAME}-chatbot" --region "${GOOGLE_CLOUD_REGION}" \
@@ -76,7 +76,7 @@ gcloud run deploy "${ENVIRONMENT_NAME}-chatbot" --region "${GOOGLE_CLOUD_REGION}
     --execution-environment gen2 --no-allow-unauthenticated
 ```
 
-IAP、または 2.2. で作成したサービス アカウントからの要求なら通信を許可するよう、権限を付与します。
+Grant permissions to allow communication if the request is from IAP or the service account created in 2.2.
 
 ```bash
 gcloud beta services identity create --service "iap.googleapis.com"
@@ -88,23 +88,23 @@ gcloud run services add-iam-policy-binding "${ENVIRONMENT_NAME}-chatbot" --regio
     --role "roles/run.invoker"
 ```
 
-サービスに接続してみましょう。
+Let's connect to the service. The following command proxies to the service.
 
 ```bash
 gcloud beta run services proxy --region "${GOOGLE_CLOUD_REGION}" "${ENVIRONMENT_NAME}-chatbot"
 ```
 
-この状態であれば http://localhost:8080 へのアクセスが Cloud Run 上のサービスに転送されます。
+In this state, access to http://localhost:8080 will be forwarded to the service on Cloud Run.
 
 ### 2.3. BigQuery
 
-データセットを作成し、
+Create a dataset,
 
 ```bash
 bq --location "${GOOGLE_CLOUD_REGION}" mk --dataset "${ENVIRONMENT_NAME//-/_}"
 ```
 
-テーブルを作成しましょう。
+And a table.
 
 ```bash
 bq mk --table --description "Metrics table" \
