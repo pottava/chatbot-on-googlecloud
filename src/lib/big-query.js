@@ -3,7 +3,7 @@ const bigquery = new BigQuery();
 
 export async function insert(record) {
   const datasetId = process.env.BQ_DATASET_ID || "dev";
-  const tableId = process.env.BQ_TABLE_ID || "qa";
+  const tableId = process.env.BQ_TABLE_ID || "qna";
   await bigquery.dataset(datasetId).table(tableId).insert(record);
 }
 export function timestamp(date) {
